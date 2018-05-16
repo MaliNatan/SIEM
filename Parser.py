@@ -4,9 +4,9 @@ PORTS = {'21' : 'FTP', '22' : 'SSH', '23' : 'TELNET', '25' : 'SMTP' , '67' : 'DH
 import mysql.connector
 from mysql.connector import errorcode
 
-user = 'root' 
+user = 'root'
 password = 'P@ssw0rd'
-host = '192.168.139.134'
+host = '192.168.44.132'
 database = 'siem'
 
 
@@ -74,11 +74,13 @@ def AllLogsToDB(log):
 
 
 def main():
-    line='2018-4-21 19:42:41 192.168.1.1 192.168.2.100 445 PASS'
+    #line='2018-4-21 19:42:41 192.168.1.1 192.168.2.100 445 PASS'
     #print LogToDic(line)
     #print PortToProto('70')
-    print AddProto(line)
+    #AddProto(line)
     #DicToDB(AddProto(line))
-    AllLogsToDB('C:\Users\Owner\Downloads\Drive\python\siem\Port_Scan.txt')
+    AllLogsToDB('C:\Users\Owner\Downloads\Drive\python\siem2\Port_Scan.txt')
 
-main()
+
+if __name__ == '__main__':
+    main()
