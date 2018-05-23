@@ -21,15 +21,31 @@ def SpecificPort():
 
 def PortScan():
     cnx, cursor = ConnectToDB()
-    add_log = ("SELECT * FROM fwlogs;")
+    add_log = ("SELECT DISTINCT SRC_IP, DST_IP, PORT FROM fwlogs;")
     cursor.execute(add_log)
-    list1=[]
+    dic={}
     for c in cursor:
-        list1.append(c)
-    list1=list(set(list1))
-    for l in list1:
-        print l
-    #wprint list1
+        ip = c[0], ' to ', c[1]
+        if ip in dic.keys():
+            dic[ip]+=1
+        else:
+            dic[ip]=1
+    #print dic
+    for x in dic.iteritems():
+        if x[1]>10:
+            print "Find Port Scan attack from ", ''.join(x[0]), "to", x[1], "ports"
+    '''dic={}
+    for c in cursor:
+        ip=c[0],'-',c[1]
+        port=c[2]
+        if ip not in dic.keys():
+            dic[ip] = {}
+        dic[ip].add(port)
+
+        #dic['IP']=c[0]+'-'+c[1]
+        #dic['PORT']=c[2]
+    print dic'''
+
     cnx.commit()
     cursor.close()
     cnx.close()
