@@ -4,6 +4,8 @@ software product that provides a real-time analysis of security alerts generated
 
 Files
 ------
-- SIEM.py -
+- Analyzer.py
+- Parser.py
+- Sniffer.py
 
 Instructions
