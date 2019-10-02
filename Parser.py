@@ -1,37 +1,37 @@
-PORTS = {'21' : 'FTP', '22' : 'SSH', '23' : 'TELNET', '25' : 'SMTP' , '67' : 'DHCP' , '53'  : 'DNS' , '80' : 'HTTP', '445'
-: 'SMB' ,'443' : 'HTTPS'}
-
 import mysql.connector
 from mysql.connector import errorcode
+import time
 
 user = 'root'
 password = 'P@ssw0rd'
-host = '192.168.44.132'
+host = '10.0.0.16'
 database = 'siem'
 
-
-
-def LogToDic(line):
-    list=line.split(' ')
-    dic={}
-    dic['SRC_IP']=list[2]
-    dic['ACTION']=list[5]
-    dic['DATE']=list[0]+' '+list[1]
-    dic['DST_IP']=list[3]
-    dic['PORT']=list[4]
-    return dic
-
-def PortToProto(port):
-    if port in PORTS.keys():
+#Firewall log file parser
+# 1
+def logtodic(line):
+    line_dic={}
+    line_s=line.split(" ")
+    line_dic["SRC_IP"]=line_s[2]
+    line_dic["ACTION"]=line_s[5]
+    line_dic["DATE"] =line_s[0]+" "+line_s[1]
+    line_dic["DST_IP"] =line_s[3]
+    line_dic["PORT"] =line_s[4]
+    return line_dic
+#2
+def PortToProtocol(port):
+    PORTS = {'21': 'FTP', '22': 'SSH', '23': 'TELNET', '25': 'SMTP', '67': 'DHCP', '53': 'DNS', '80': 'HTTP', '445': 'SMB', '443': 'HTTPS'}
+    if port in PORTS:
         return PORTS[port]
     else:
-        return 'UNKNOWN'
-
-def AddProto(line):
-    dic=LogToDic(line)
-    dic['PROTOCOL']=PortToProto(dic['PORT'])
+        return "UNKNOWN"
+#3
+def AddProtocol(dic):
+    protocol=PortToProtocol(dic["PORT"])
+    dic["PROTOCOL"]=protocol
     return dic
 
+#DB Check Connection
 def ConnectToDB():
     try:
         cnx = mysql.connector.connect(user=user, password=password,
@@ -47,40 +47,32 @@ def ConnectToDB():
         return None
 
 
-def DicToDB(dic):
-    cnx, cursor = ConnectToDB()
-    add_log = ("""INSERT INTO fwlogs (ID, date, SRC_IP, DST_IP, PORT, PROTOCOL, ACTION) VALUES (NULL, %(DATE)s, %(SRC_IP)s, %(DST_IP)s, %(PORT)s, %(PROTOCOL)s, %(ACTION)s)""")
-    cursor.execute(add_log, dic)
+def LogToDB(path,cnx,cursor):
+    with open (path,'r') as opened_file:
+        while True:
+            line=opened_file.readline()
+            if line:
+                dic_line=AddProtocol(logtodic(line))
+                InsertToDB(dic_line,cnx,cursor)
+            else:
+                time.sleep(0.1)
+
+#Insert to DB
+def InsertToDB(line, cnx, cursor):
+    add_log =("""INSERT INTO fwlogs
+                (ID, date, SRC_IP, DST_IP, PORT, PROTOCOL, ACTION)
+                VALUES (NULL, %(DATE)s, %(SRC_IP)s, %(DST_IP)s, %(PORT)s, %(PROTOCOL)s, %(ACTION)s)""")
+    cursor.execute(add_log, line)
     cnx.commit()
-    cursor.close()
-    cnx.close()
-
-'''def AnalyzeSusPort():
-    cnx, cursor=ConnectToDB()
-    query=("SELECT SRC_IP FROM logs WHERE PORT IN ({})".format(','))
-    cursor.execute(query)
-    query_result=[]
-    for line in cursor:
-        query_result.append(line[0])
-    cursor.close()
-    cnx.close()
-    return set(query_result)'''
-
-def AllLogsToDB(log):
-    new_log=open(log, 'r')
-    for line in new_log:
-        DicToDB(AddProto(line))
 
 
 
 def main():
-    #line='2018-4-21 19:42:41 192.168.1.1 192.168.2.100 445 PASS'
-    #print LogToDic(line)
-    #print PortToProto('70')
-    #AddProto(line)
-    #DicToDB(AddProto(line))
-    AllLogsToDB('C:\Users\Owner\Downloads\Drive\python\siem2\Port_Scan.txt')
-
-
+    cnx, cursor = ConnectToDB()
+    query = ("SELECT * FROM fwlogs")
+    cursor.execute(query)
+    LogToDB("log_file.txt",cnx,cursor)
+    cursor.close()
+    cnx.close()
 if __name__ == '__main__':
     main()
